@@ -1,0 +1,15 @@
+Скачать
+git clone https://github.com/AlexRMU/golosovanie.git
+
+Отправить версию в репозиторий
+git add .
+git commit -m "message"
+git push
+
+Обновить локальную версию до последней
+git pull origin master
+
+Отправить новую версию в основную
+git checkout -b new
+git commit -m "message"
+git push origin new
