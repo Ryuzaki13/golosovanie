@@ -1,15 +1,37 @@
 package main
 
-import "fmt"
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
+	// server()
+
+	// создание роутера
+	var router_setup = func() *gin.Engine {
+		var router = gin.Default()
+
+		router.Static("/static/", "./static")
+		router.LoadHTMLGlob("templates/*")
+
+		// данные аккаунта
+		router.POST("/api/user/select-info", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"Data": gin.H{"Phone": "14819"}, "Error": nil})
 		})
-	})
-	r.Run()
-	fmt.Println("listen and serve on localhost:8080")
+		// главная
+		router.GET("/", func(c *gin.Context) {
+			// c.JSON(http.StatusOK, gin.H{"Data": gin.H{"Phone": "14819"}, "Error": nil})
+			c.HTML(http.StatusOK, "index.html", gin.H{})
+		})
+
+
+		return router
+	}
+
+
+
+	router_setup().Run()
+
 }
