@@ -49,8 +49,10 @@ func main() {
 				os.Exit(1)
 			}
 			id := string(req_body[:])
+
 			// date := time.Now().AddDate(0, 0, 7-int(time.Now().Weekday())).Format("2006-01-02")
 			date := "2021-01-17"
+
 			fmt.Println("---id---: " + id)
 			fmt.Println("---date---: " + date)
 
@@ -64,6 +66,7 @@ func main() {
 		router_setup().Run()
 	}
 
+	connection, err := pgxpool.Connect(context.Background(), "postgres://postgres:1@localhost:5432/postgres?statement_cache_capacity=0&pool_max_conns=999")
 	// min_read_buffer_size
 	// servicefile
 	// statement_cache_capacity
@@ -74,16 +77,15 @@ func main() {
 	// pool_max_conn_lifetime
 	// pool_max_conn_idle_time
 	// pool_health_check_period
-	connection, err := pgxpool.Connect(context.Background(), "postgres://postgres:1@localhost:5432/postgres?statement_cache_capacity=0&pool_max_conns=999")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 	}
 	defer connection.Close()
+
 	// connection.Exec() //для выполнения запроса, который не возвращает набор результатов
 	// connection.Query() //получить ряды
 	// connection.QueryRow() //получить 1 ряд
 	// connection.QueryFunc() //execute a callback function for every row
-
 
 	var resp []int
 	err = connection.QueryRow(context.Background(), `select array(select id from files);`).Scan(&resp)
@@ -94,24 +96,21 @@ func main() {
 	fmt.Println(resp)
 
 
-
 	rows, err := connection.Query(context.Background(), "select generate_series(1,$1)", 10)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Query Error: %v\n", err)
 	}
 	defer rows.Close()
 
+	if rows.Err() != nil {
+		fmt.Fprintf(os.Stderr, "Query Error: %v\n", err)
+	}
 	for rows.Next() {
 		var n int32
 		err = rows.Scan(&n)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Query Error: %v\n", err)
 		}
-		sum += n
-	}
-
-	if rows.Err() != nil {
-		fmt.Fprintf(os.Stderr, "Query Error: %v\n", err)
 	}
 
 }
