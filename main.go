@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"html/template"
@@ -42,6 +43,21 @@ func main() {
 	}
 	defer connection.Close()
 
+	file, _ := os.Open("sql.sql")
+	str, _ := ioutil.ReadAll(file)
+	_, err = connection.Exec(context.Background(), string(str))
+
+	// connection.Exec() - для выполнения запроса, который не возвращает набор результатов
+	// connection.Query() - получить ряды
+	// connection.QueryRow() - получить 1 ряд
+	// connection.QueryFunc() - execute a callback function for every row
+
+	//
+
+	//
+
+	//
+
 	// создание роутера
 	var router_setup = func() *gin.Engine {
 
@@ -68,7 +84,7 @@ func main() {
 			"Data": {
 				"Branch": "44b72cd889a44234a8a7a49750fedf1bc5a654d8b06257ec5866711be0be6286",
 				"Phone": "12345",
-				"isStudent": true
+				"isStudent": false
 			},
 			"Error": null
 		}`)
@@ -82,6 +98,8 @@ func main() {
 		})
 
 		// изменение списка песен
+		router.GET("/edit-songs", func(c *gin.Context) {
+		})
 		router.POST("/edit-songs", func(c *gin.Context) {
 		})
 
@@ -89,25 +107,19 @@ func main() {
 		router.POST("/choice", func(c *gin.Context) {
 		})
 
-		// отмена голоса
-		router.POST("/delete-choice", func(c *gin.Context) {
-		})
-
 		// история голосований
-		router.POST("/history", func(c *gin.Context) {
-		})
+		// router.POST("/history", func(c *gin.Context) {
+		// })
 
 		// текущее голосование
-		router.POST("/current", func(c *gin.Context) {
+		router.POST("/vote", func(c *gin.Context) {
 			req_body, err := ioutil.ReadAll(c.Request.Body)
 			if err != nil {
 				fmt.Println("req_body error\n", err)
 			}
-			user_id, _ := strconv.Atoi(string(req_body[:]))
-
-			file, _ := os.Open("sql.sql")
-			str, _ := ioutil.ReadAll(file)
-			_, err = connection.Exec(context.Background(), string(str))
+			a := strings.Split(string(req_body[:]), "-")
+			user_id, _ := strconv.Atoi(a[0])
+			user_student, _ := strconv.ParseBool(a[1])
 
 			var vote vote_type
 			// date := time.Now().AddDate(0, 0, 7-int(time.Now().Weekday()))
@@ -167,11 +179,15 @@ func main() {
 			var data = struct {
 				Date        string
 				User_choice int
+				User_id     int
+				User_student bool
 				Winner      int
 				Votes       []votes_type
 			}{
 				vote.Date.Format("2006-01-02"),
 				user_choice,
+				user_id,
+				user_student,
 				vote.Winner,
 				vote.Votes,
 			}
@@ -188,37 +204,10 @@ func main() {
 
 	router_setup().Run()
 
-	if false {
+	//
 
-		// connection.Exec() - для выполнения запроса, который не возвращает набор результатов
-		// connection.Query() - получить ряды
-		// connection.QueryRow() - получить 1 ряд
-		// connection.QueryFunc() - execute a callback function for every row
+	//
 
-		var resp []int
-		err = connection.QueryRow(context.Background(), `select array(select id from files);`).Scan(&resp)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "QueryRow Error: %v\n", err)
-		}
-		defer connection.Close()
-		fmt.Println(resp)
-
-		rows, err := connection.Query(context.Background(), "select generate_series(1,$1)", 10)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Query Error: %v\n", err)
-		}
-		defer rows.Close()
-
-		if rows.Err() != nil {
-			fmt.Fprintf(os.Stderr, "Query Error: %v\n", err)
-		}
-		for rows.Next() {
-			var n int32
-			err = rows.Scan(&n)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Query Error: %v\n", err)
-			}
-		}
-	}
+	//
 
 }
