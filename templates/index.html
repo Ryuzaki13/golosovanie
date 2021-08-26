@@ -4,28 +4,224 @@
 {{ template "Header" }}
 
 <body>
+    {{with $obj := .}}
 
-    <script>
-        let obj = {
-            votes: [
-                {{range .Votes}}
-                {
-                    song_id: {{.Song_id}},
-                    votes: {{.Votes | arr_int_len}},
-                    name: {{.Name}},
-                    url: {{.Url}},
-                },
+        {{if eq .Winner 0}}
+            Голосование идёт<br>
+        {{else}}
+            Голосование окончено<br>
+            Победитель:
+            {{range .Votes}}
+                {{if eq .Song_id $obj.Winner}}
+                <a href="{{.Url}}">{{.Name}}</a><br>
                 {{end}}
-            ],
-            date: "{{.Date}}",
-            winner: {{.Winner}},
-            user_choice: {{.User_choice}},
-            user_id: {{.User_id}},
-            user_student: {{.User_student}},
-        }
-    </script>
+            {{else}}
+                произведение удалено
+            {{end}}
+        {{end}}
 
-    <script src="./static/2.js"></script>
+        Дата окончания: {{.Date}}<br>
+
+        {{range $i, $val := .Votes}}
+            <input type="radio" id="input{{$i}}" value="{{$val.Song_id}}"{{if eq $obj.User_choice $val.Song_id}} checked{{end}}{{if ne $obj.Winner 0}} disabled{{end}}>
+            <label for="input{{$i}}">
+                <a href="{{$val.Url}}">{{$val.Name}}</a><div style="display: contents" id="p{{$i}}"></div><br>
+            </label>
+        {{end}}
+
+        {{if eq .Winner 0}}
+            <button id="g">Голосовать</button><br>
+            <script>
+                document.querySelector(`#g`).addEventListener("click", () => {
+                    if (![...document.querySelectorAll("input")].filter(x => x.checked)[0]) {
+                        fetch('/choice', {
+                            method: 'POST',
+                            body: `{
+                                "id": {{.User_id}},
+                                "voting_id": {{.Vote_id}},
+                                "choice": ${[...document.querySelectorAll("input")].filter(x => x.checked)[0].value}
+                            }`
+                        })
+                        location.reload();
+                    } else {
+                        alert("Сначала нужно выбрать")
+                    }
+                })
+            </script>
+        {{end}}
+
+        {{if ne .User_student true}}
+        <a href="/edit-songs">Изменить список песен</a><br>
+        {{end}}
+        <a href="/history">История голосований</a>
+
+        <script>
+            let sum = 0{{range $i, $val := .Votes}}+{{$val.Points}}{{end}};
+            {{range $i, $val := .Votes}}
+            document.querySelector("#p{{$i}}").innerText = ` (очков: {{$val.Points}}, ${Math.round({{$val.Points}} / sum * 100)}%)`
+            {{end}}
+        </script>
+
+
+
+
+
+
+
+
+    {{end}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--
+
+    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+
+    {{with $x := "output" | printf "%q"}}{{$x}}{{end}}<br>
+    {{with $x := "output"}}{{printf "%q" $x}}{{end}}<br>
+    {{with $x := "output"}}{{$x | printf "%q"}}{{end}}<br>
+
+
+    {{with $pipeline := "output"}}
+
+{{$pipeline}}
+<br>
+{{if $pipeline}} T1 {{end}}
+<br>
+{{if $pipeline}} T1 {{else}} T0 {{end}}
+<br>
+{{if $pipeline}} T1 {{else if $pipeline}} T0 {{end}}
+<br>
+{range .Votes} T1 {end}
+<br>
+{range .Votes} T1 {else} T0 {end}
+<br>
+{{with $pipeline}} T123 {{end}}
+<br>
+{{with $pipeline}} T12 {{else}} T30 {{end}}
+<br>
+{$pipeline.Func} == pipeline.Func()
+<br>
+{$pipeline.Func "123" "123"} == pipeline.Func("123","123")
+<br><br>
+
+{{"\"output\""}}
+	A string constant.
+{{`"output"`}}
+	A raw string constant.
+{{printf "%q" "output"}}
+	A function call.
+{{"output" | printf "%q"}}
+	A function call whose final argument comes from the previous
+	command.
+{{printf "%q" (print "out" "put")}}
+	A parenthesized argument.
+{{"put" | printf "%s%s" "out" | printf "%q"}}
+	A more elaborate call.
+{{"output" | printf "%s" | printf "%q"}}
+	A longer chain.
+{{with "output"}}{{printf "%q" .}}{{end}}
+	A with action using dot.
+{{with $x := "output" | printf "%q"}}{{$x}}{{end}}
+	A with action that creates and uses a variable.
+{{with $x := "output"}}{{printf "%q" $x}}{{end}}
+	A with action that uses the variable in another action.
+{{with $x := "output"}}{{$x | printf "%q"}}{{end}}
+	The same, but pipelined.
+
+    <br><br>
+
+and
+	Returns the boolean AND of its arguments by returning the
+	first empty argument or the last argument, that is,
+	"and x y" behaves as "if x then y else x". All the
+	arguments are evaluated.
+call
+	Returns the result of calling the first argument, which
+	must be a function, with the remaining arguments as parameters.
+	Thus "call .X.Y 1 2" is, in Go notation, dot.X.Y(1, 2) where
+	Y is a func-valued field, map entry, or the like.
+	The first argument must be the result of an evaluation
+	that yields a value of function type (as distinct from
+	a predefined function such as print). The function must
+	return either one or two result values, the second of which
+	is of type error. If the arguments don't match the function
+	or the returned error value is non-nil, execution stops.
+html
+	Returns the escaped HTML equivalent of the textual
+	representation of its arguments. This function is unavailable
+	in html/template, with a few exceptions.
+index
+	Returns the result of indexing its first argument by the
+	following arguments. Thus "index x 1 2 3" is, in Go syntax,
+	x[1][2][3]. Each indexed item must be a map, slice, or array.
+slice
+	slice returns the result of slicing its first argument by the
+	remaining arguments. Thus "slice x 1 2" is, in Go syntax, x[1:2],
+	while "slice x" is x[:], "slice x 1" is x[1:], and "slice x 1 2 3"
+	is x[1:2:3]. The first argument must be a string, slice, or array.
+js
+	Returns the escaped JavaScript equivalent of the textual
+	representation of its arguments.
+len
+	Returns the integer length of its argument.
+not
+	Returns the boolean negation of its single argument.
+or
+	Returns the boolean OR of its arguments by returning the
+	first non-empty argument or the last argument, that is,
+	"or x y" behaves as "if x then x else y". All the
+	arguments are evaluated.
+print
+	An alias for fmt.Sprint
+printf
+	An alias for fmt.Sprintf
+println
+	An alias for fmt.Sprintln
+urlquery
+	Returns the escaped value of the textual representation of
+	its arguments in a form suitable for embedding in a URL query.
+	This function is unavailable in html/template, with a few
+	exceptions.
+
+
+    <br><br>
+
+eq
+	Returns the boolean truth of arg1 == arg2
+ne
+	Returns the boolean truth of arg1 != arg2
+lt
+	Returns the boolean truth of arg1 < arg2
+le
+	Returns the boolean truth of arg1 <= arg2
+gt
+	Returns the boolean truth of arg1 > arg2
+ge
+	Returns the boolean truth of arg1 >= arg2
+
+    <br><br>
+
+
+
+{{end}}
+-->
+
+
 
 </body>
 
