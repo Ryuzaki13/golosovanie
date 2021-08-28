@@ -4,8 +4,8 @@ DROP TABLE "votes" CASCADE;
 
 CREATE TABLE "songs" (
 	"song_id" SERIAL PRIMARY KEY, --айди песни
-	"name" TEXT NOT NULL UNIQUE, --имя
-    "url" TEXT NOT NULL UNIQUE, --ссылка на файл
+	"name" TEXT NOT NULL UNIQUE DEFAULT '', --имя
+    "url" TEXT NOT NULL UNIQUE DEFAULT '', --ссылка на файл
     "active" boolean NOT NULL DEFAULT TRUE --добавлять песню в новые голосованиях
 );
 
@@ -19,8 +19,8 @@ CREATE TABLE "history" (
 CREATE TABLE "votes" (
 	"voting_id" integer NOT NULL, --айди голосования
     "song_id" integer NOT NULL, --айди песни в голосовании
-    "votes" integer ARRAY, --голоса за песню
-    "points" integer NOT NULL, --количество очков за песню
+    "votes" integer ARRAY DEFAULT ARRAY[]::integer[], --голоса за песню
+    "points" integer NOT NULL DEFAULT 0, --количество очков за песню
     FOREIGN KEY ("voting_id") REFERENCES "history" ("voting_id") ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY ("song_id") REFERENCES "songs" ("song_id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -42,7 +42,7 @@ INSERT INTO "songs" ("name", "url", "active") VALUES
 INSERT INTO "history" ("date", "winner") VALUES
     ('2021-01-03', 4),
     ('2021-01-10', 1),
-    ('2021-01-17', 3);
+    ('2021-01-17', 0);
 
 INSERT INTO "votes" ("voting_id", "song_id", "votes", "points") VALUES
     ('1', '1', '{1870,1136,1094,1333,1358,1310,1023,1119,1668}', '9'),

@@ -23,28 +23,41 @@
         Дата окончания: {{.Date}}<br>
 
         {{range $i, $val := .Votes}}
-            <input type="radio" id="input{{$i}}" value="{{$val.Song_id}}"{{if eq $obj.User_choice $val.Song_id}} checked{{end}}{{if ne $obj.Winner 0}} disabled{{end}}>
+            <input type="radio" name="1" id="input{{$i}}" value="{{$val.Song_id}}"{{if eq $obj.User_choice $val.Song_id}} checked{{end}}{{if ne $obj.Winner 0}} disabled{{end}}>
             <label for="input{{$i}}">
                 <a href="{{$val.Url}}">{{$val.Name}}</a><div style="display: contents" id="p{{$i}}"></div><br>
             </label>
         {{end}}
 
+        <script>
+            let sum = 0{{range $i, $val := .Votes}}+{{$val.Points}}{{end}};
+            {{range $i, $val := .Votes}}
+            document.querySelector("#p{{$i}}").innerText = ` (очков: {{$val.Points}}, ${Math.round({{$val.Points}} / sum * 100)}%)`
+            {{end}}
+        </script>
+
         {{if eq .Winner 0}}
             <button id="g">Голосовать</button><br>
             <script>
-                document.querySelector(`#g`).addEventListener("click", () => {
+                document.querySelector(`#g`).addEventListener("click", async () => {
                     if (![...document.querySelectorAll("input")].filter(x => x.checked)[0]) {
-                        fetch('/choice', {
+                        alert("Сначала нужно выбрать")
+                    } else {
+                        await fetch('/choice', {
                             method: 'POST',
                             body: `{
                                 "id": {{.User_id}},
                                 "voting_id": {{.Vote_id}},
                                 "choice": ${[...document.querySelectorAll("input")].filter(x => x.checked)[0].value}
                             }`
+                        }).then(x => x.text()).then(x => {
+                            if (x == "1") {
+                                alert("Успешно")
+                            } else {
+                                alert("Произошла ошибка")
+                            }
+                            location.reload();
                         })
-                        location.reload();
-                    } else {
-                        alert("Сначала нужно выбрать")
                     }
                 })
             </script>
@@ -53,14 +66,13 @@
         {{if ne .User_student true}}
         <a href="/edit-songs">Изменить список песен</a><br>
         {{end}}
-        <a href="/history">История голосований</a>
+        <a href="/history">История голосований</a><br>
+        {{if eq .Hist true}}
+        <a href="/">На главную</a><br>
+        {{end}}
 
-        <script>
-            let sum = 0{{range $i, $val := .Votes}}+{{$val.Points}}{{end}};
-            {{range $i, $val := .Votes}}
-            document.querySelector("#p{{$i}}").innerText = ` (очков: {{$val.Points}}, ${Math.round({{$val.Points}} / sum * 100)}%)`
-            {{end}}
-        </script>
+
+
 
 
 

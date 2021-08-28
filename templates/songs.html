@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+{{ template "Header" }}
+
+<body>
+
+    <table border="1" style="border-collapse: collapse;">
+        <caption>Список песен</caption>
+        <thead>
+            <tr>
+                <td>Имя</td>
+                <td>Ссылка</td>
+                <td>Добавлять в новые голосования</td>
+                <td>Удаление</td>
+            </tr>
+        </thead>
+        <tbody>
+            {{with $obj := .}}
+                {{range $i, $s := .Songs}}
+                    {{if ne $s.Name ""}}
+                        <tr>
+                            <td><input type="text" placeholder="Имя" value="{{$s.Name}}"></input></td>
+                            <td><input type="url" placeholder="Ссылка" value="{{$s.Url}}"></input></td>
+                            <td><input type="checkbox"{{if eq $s.Active true}} checked{{end}}></input></td>
+                            <td><button class="del">Удалить</button></td>
+                        </tr>
+                    {{end}}
+                {{else}}
+                    Песен нет
+                {{end}}
+            {{end}}
+        </tbody>
+    </table>
+
+    <button id="add">Добавить</button><br>
+    <button id="save">Сохранить</button><br>
+
+    <script>
+        document.querySelectorAll(`.del`).forEach(x => {
+            x.addEventListener("click", (e) => {
+                e.target.parentElement.parentElement.remove()
+            })
+        })
+        document.querySelector(`#add`).addEventListener("click", () => {
+            let row = document.querySelector(`tbody`).insertRow()
+            row.innerHTML = `
+            <td><input type="text" placeholder="Имя"></input></td>
+            <td><input type="url" placeholder="Ссылка"></input></td>
+            <td><input type="checkbox"></input></td>
+            <td><button class="del">Удалить</button><br></td>
+            `
+            row.querySelector(`.del`).addEventListener("click", (e) => {
+                e.target.parentElement.parentElement.remove()
+            })
+        })
+        document.querySelector(`#save`).addEventListener("click", async () => {
+            let body = []
+            document.querySelectorAll(`tbody tr`).forEach(x => {
+                let name = x.children[0].children[0].value.replace(/'|"/gim, "_")
+                let url = x.children[1].children[0].value.replace(/'|"/gim, "_")
+                let active = x.children[2].children[0].checked
+                if (name != "" && url != "") {
+                    body.push([name, url, "" + active])
+                }
+            })
+            await fetch('/edit-songs', {
+                method: 'POST',
+                body: JSON.stringify(body)
+            }).then(x => x.text()).then(x => {
+                if (x == "1") {
+                    alert("Успешно")
+                } else {
+                    alert("Произошла ошибка")
+                }
+                location.reload();
+            })
+        })
+    </script>
+
+    <a href="/">На главную</a>
+
+</body>
+
+</html>
