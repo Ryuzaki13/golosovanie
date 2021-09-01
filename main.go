@@ -26,8 +26,19 @@ type vote_type struct {
 	Votes     []votes_type `json:"Votes"`
 }
 
-var ves_s = 1
-var ves_p = 10
+type song_type struct {
+	Song_id int    `json:"Song_id"`
+	Name    string `json:"Name"`
+	Url     string `json:"Url"`
+	Active  bool   `json:"Active"`
+}
+
+var ves_s = 1         // вес голоса студента
+var ves_p = 10        // вес голоса преподавателя
+var show_count = true // показывать общее количество проголосовавших
+// var vote_change = true // можно ли изменять свой выбор
+// var show_points = true // показывать количество очков до выбора
+
 var connection = connect_to_db("postgres://postgres:1@localhost:5432/postgres?statement_cache_capacity=0&pool_max_conns=1000")
 
 func main() {

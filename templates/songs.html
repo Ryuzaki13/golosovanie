@@ -1,85 +1,129 @@
-<!DOCTYPE html>
-<html lang="ru">
 
-{{ template "Header" }}
+{{ template "Top" }}
 
-<body>
-
-    <table border="1" style="border-collapse: collapse;">
-        <caption>Список песен</caption>
-        <thead>
-            <tr>
-                <td>Имя</td>
-                <td>Ссылка</td>
-                <td>Добавлять в новые голосования</td>
-                <td>Удаление</td>
-            </tr>
-        </thead>
-        <tbody>
-            {{with $obj := .}}
-                {{range $i, $s := .Songs}}
-                    {{if ne $s.Name ""}}
-                        <tr>
-                            <td><input type="text" placeholder="Имя" value="{{$s.Name}}"></input></td>
-                            <td><input type="url" placeholder="Ссылка" value="{{$s.Url}}"></input></td>
-                            <td><input type="checkbox"{{if eq $s.Active true}} checked{{end}}></input></td>
-                            <td><button class="del">Удалить</button></td>
-                        </tr>
-                    {{end}}
-                {{else}}
-                    Песен нет
+<table border="1" style="border-collapse: collapse;">
+    <caption>Список песен</caption>
+    <thead>
+        <tr>
+            <td>Имя</td>
+            <td>Ссылка на файл</td>
+            <td>Добавлять в новые голосования</td>
+            <td>Изменение</td>
+        </tr>
+    </thead>
+    <tbody>
+        {{with $obj := .}}
+            {{range $i, $s := .Songs}}
+                {{if ne $s.Name ""}}
+                    <tr id="{{$s.Song_id}}">
+                        <td>{{$s.Name}}</td>
+                        <td>{{$s.Url}}</td>
+                        <td><input type="checkbox"{{if eq $s.Active true}} checked{{end}} disabled></input></td>
+                        <td><button class="ch">Изменить</button></td>
+                    </tr>
                 {{end}}
+            {{else}}
+                Песен нет
             {{end}}
-        </tbody>
-    </table>
+        {{end}}
+    </tbody>
+</table>
 
-    <button id="add">Добавить</button><br>
-    <button id="save">Сохранить</button><br>
+<button id="add">Добавить</button><br>
 
-    <script>
-        document.querySelectorAll(`.del`).forEach(x => {
-            x.addEventListener("click", (e) => {
-                e.target.parentElement.parentElement.remove()
-            })
-        })
-        document.querySelector(`#add`).addEventListener("click", () => {
-            let row = document.querySelector(`tbody`).insertRow()
-            row.innerHTML = `
-            <td><input type="text" placeholder="Имя"></input></td>
-            <td><input type="url" placeholder="Ссылка"></input></td>
-            <td><input type="checkbox"></input></td>
-            <td><button class="del">Удалить</button><br></td>
+<div class="popup">
+    <div class="cont">
+        <div></div>
+        <button id="s">Сохранить</button>
+        <button id="del">Удалить</button>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll(`.ch`).forEach(x => {
+        x.addEventListener("click", e => {
+            document.querySelector(".popup").style.visibility = "visible"
+            document.querySelector(".cont > div").innerHTML = `
+            <form>
+                <input name="name" type="text" placeholder="Имя" value="${x.parentElement.parentElement.children[0].innerHTML}"></input>
+                <input name="url" type="url" placeholder="Ссылка" value="${x.parentElement.parentElement.children[1].innerHTML}"></input>
+                <input name="active" type="checkbox" checked></input>
+                <input name="id" type="number" value="${x.parentElement.parentElement.id}" hidden></input>
+            </form>
             `
-            row.querySelector(`.del`).addEventListener("click", (e) => {
-                e.target.parentElement.parentElement.remove()
-            })
         })
-        document.querySelector(`#save`).addEventListener("click", async () => {
-            let body = []
-            document.querySelectorAll(`tbody tr`).forEach(x => {
-                let name = x.children[0].children[0].value.replace(/'|"/gim, "_")
-                let url = x.children[1].children[0].value.replace(/'|"/gim, "_")
-                let active = x.children[2].children[0].checked
-                if (name != "" && url != "") {
-                    body.push([name, url, "" + active])
-                }
+    })
+
+    document.querySelector(`#s`).addEventListener("click", () => {
+        fetch('/edit-songs', {
+            method: 'POST',
+            body: JSON.stringify({
+                "Name": `${document.forms[0].name.value}`,
+                "Url": `${document.forms[0].url.value}`,
+                "Active": document.forms[0].active.checked || true,
+                "Song_id": parseInt(document.forms[0].id.value) || 0,
             })
-            await fetch('/edit-songs', {
-                method: 'POST',
-                body: JSON.stringify(body)
-            }).then(x => x.text()).then(x => {
-                if (x == "1") {
-                    alert("Успешно")
-                } else {
-                    alert("Произошла ошибка")
-                }
-                location.reload();
-            })
+        }).then(x => x.text()).then(x => {
+            if (x == "1") {
+                alert("Успешно")
+            } else {
+                alert("Произошла ошибка")
+            }
+            location.reload();
         })
-    </script>
+    })
 
-    <a href="/">На главную</a>
+    document.querySelector(`#del`).addEventListener("click", () => {
+        location.reload();
+    })
 
-</body>
+    document.querySelector(`#add`).addEventListener("click", () => {
+        let row = document.querySelector(`tbody`).insertRow()
+        row.innerHTML = `
+            <td></td>
+            <td></td>
+            <td><input type="checkbox" checked disabled></input></td>
+            <td><button class="ch">Изменить</button></td>
+        `
+        row.querySelector(`.ch`).addEventListener("click", e => {
+            document.querySelector(".popup").style.visibility = "visible"
+            document.querySelector(".cont > div").innerHTML = `
+            <form>
+                <input type="text" placeholder="Имя"></input>
+                <input type="url" placeholder="Ссылка"></input>
+                <input type="checkbox" checked></input>
+            </form>
+            `
+        })
+    })
+</script>
 
-</html>
+<style>
+    body {
+        margin: 0;
+    }
+    .popup {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        position: fixed;
+        top: 0px;
+        visibility: hidden;
+    }
+
+    .cont {
+        background-color: #c5c5c5;
+        border-radius: 5px;
+        box-shadow: 0px 0px 10px #000;
+        width: fit-content;
+        height: fit-content;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        position: absolute;
+        top: 10%;
+        padding: 30px;
+    }
+</style>
+
+<a href="/">На главную</a>

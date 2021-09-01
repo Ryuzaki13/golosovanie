@@ -1,30 +1,20 @@
-<!DOCTYPE html>
-<html lang="ru">
 
-{{ template "Header" }}
+{{ template "Top" }}
 
-<body>
+История голосований<br>
 
-    История голосований<br>
-
-    {{with $obj := .}}
-
-        {{range $i, $voting := .History}}
-            {{if eq $voting.Date $obj.Date}}
-                <a href="/">{{$obj.Date}}</a> - Текущее голосование<br>
-            {{else}}
-                {{if eq $voting.Name ""}}
-                    {{$voting.Date}} - Победитель: удалён
-                {{else}}
-                    <a href="/history/{{$voting.Date}}">{{$voting.Date}}</a> - Победитель: <a href="{{$voting.Url}}">{{$voting.Name}}</a><br>
-                {{end}}
-            {{end}}
+{{with $obj := .}}
+    {{range $i, $voting := .History}}
+        {{if eq $voting.Date $obj.Date}}
+            <a href="/">{{$obj.Date}}</a> - Текущее голосование<br>
         {{else}}
-            Голосований не проводилось.
+            {{if eq $voting.Name ""}}
+                {{$voting.Date}} - Победитель: удалён
+            {{else}}
+                <a href="/history/{{$voting.Date}}">{{$voting.Date}}</a> - Победитель: <a href="{{$voting.Url}}">{{$voting.Name}}</a><br>
+            {{end}}
         {{end}}
-
+    {{else}}
+        Голосований не проводилось.
     {{end}}
-
-</body>
-
-</html>
+{{end}}

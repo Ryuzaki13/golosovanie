@@ -1,21 +1,5 @@
-Скачать
-git clone https://github.com/AlexRMU/golosovanie.git
-
-Отправить коммит в репозиторий
 git add .
 git commit -m "update"
 git push
 
-Обновить локальную версию до последней
-git pull origin master
-
-Отправить новую ветку в основную
-git checkout -b new
-git commit -m "update"
-git push origin new
-
----
-
-Запуск
-go build -o build/bundle.exe && build\bundle.exe
 nodemon -V -w . -i build,static,templates -e go,mod,sum -x "cls && go build -o build/bundle.exe && build\bundle.exe"

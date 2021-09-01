@@ -1,0 +1,222 @@
+
+{{ template "Top" }}
+
+<style>
+    .main {
+        line-height: 14px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, rgb(242, 73, 115) 0%, rgb(57, 72, 230) 100%);
+        width: fit-content;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 20px;
+        color: #ffffff;
+    }
+
+    .title {
+        padding: 30px 30px 10px 30px;
+        font-weight: 900;
+        line-height: 34px;
+        font-size: 30px;
+        text-align: center;
+    }
+
+    .title>div {
+        font-size: 14px;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        align-content: flex-start;
+        font-weight: 100;
+    }
+
+    .title>div>div {
+        color: #ffffffd6;
+        font-size: 16px;
+
+        display: block;
+        flex-grow: 0;
+        flex-shrink: 1;
+        flex-basis: auto;
+        align-self: auto;
+        order: 0;
+    }
+
+    .options {
+        padding: 0 25px;
+    }
+
+    .option {
+        cursor: pointer;
+        background: #ffffff14;
+        border-radius: 4px;
+        transition: background-color .1s;
+        display: flex;
+        position: relative;
+        overflow: hidden;
+        padding: 10px;
+        margin: 5px;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .points {
+        opacity: 0.15;
+        position: absolute;
+        background: #ffffff;
+        width: 100%;
+        height: 100%;
+        left: 0;
+        pointer-events: none;
+    }
+
+    .ch {
+        border-left-color: white;
+        border-left-style: solid;
+        border-left-width: 2px;
+    }
+
+    .opened {
+        transform: rotate(0deg);
+        transition: 1s;
+    }
+
+    .closed {
+        transform: rotate(180deg);
+        transition: 1s;
+    }
+
+    .dop {
+        display: none;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .count {
+        margin-left: auto;
+        margin-right: auto;
+        width: fit-content;
+        color: #ffffffd6;
+        padding: 5px;
+    }
+
+    .bottom {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .bottom a {
+        color: #ffffffd6;
+    }
+</style>
+
+{{with $obj := .}}
+
+    <div class="main">
+
+        <div class="title">Голосование за мелодию звонка на следующую неделю
+            <div>
+                {{if eq .Winner 0}}
+                    <div>Голосование идёт</div>
+                {{else}}
+                    <div>Голосование окончено</div>
+                {{end}}
+                <div>Дата окончания: {{.Date}}</div>
+            </div>
+            {{if ne .Winner 0}}
+                Победитель:
+                {{range .Votes}}
+                    {{if eq .Song_id $obj.Winner}}
+                    <a style="color: #ffffffd6;" href="{{.Url}}">{{.Name}}</a>
+                    {{end}}
+                {{end}}
+            {{end}}
+        </div>
+
+        <div class="options">
+            {{range $i, $val := .Votes}}
+                <div class="option{{if eq $obj.User_choice $val.Song_id}} ch{{end}}" id="{{$val.Song_id}}">
+                    <div style="pointer-events: none;">
+                        {{$val.Name}}
+                        {{if eq $obj.Winner 0}}
+                        <span style="color: #ffffff50;"> ⋅ {{$val.Points}}</span>
+                        {{end}}
+                    </div>
+                    <svg class="closed" style="height: 30px;" viewBox="0 0 512 512"><g><g><path style="fill:#FFFFFF;" d="M256,0C114.833,0,0,114.833,0,256s114.833,256,256,256s256-114.853,256-256S397.167,0,256,0z M256,472.341    c-119.275,0-216.341-97.046-216.341-216.341S136.725,39.659,256,39.659c119.295,0,216.341,97.046,216.341,216.341S375.275,472.341,256,472.341z"></path></g></g><g><g><path style="fill:#FFFFFF;" d="M369.227,283.365l-99.148-99.148c-7.734-7.694-20.226-7.694-27.96,0l-99.148,99.148c-6.365,7.416-6.365,18.382,0,25.798    c7.119,8.309,19.651,9.28,27.96,2.161L256,226.256l85.267,85.069c7.734,7.694,20.226,7.694,27.96,0C376.921,303.591,376.921,291.098,369.227,283.365z"></path></g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g></svg>
+                    <div class="points"{{if eq $obj.User_choice $val.Song_id}} style="opacity: 0.35;"{{end}}></div>
+                </div>
+                <div class="dop">
+                    <audio controls loop>
+                        <source src="{{$val.Url}}">
+                        Ваш браузер не поддерживает аудио HTML5. Ссылка на файл:
+                        <a href="{{$val.Url}}"><svg style="height: 54px;" x="0px" y="0px" viewBox="0 0 512.001 512.001"><path style="fill:#A3E1FF;" d="M476.85,35.151c46.868,46.857,46.868,122.836,0,169.704l-98.879,98.89c-13.312,13.312-28.965,22.832-45.641,28.582c-25.364,8.743-53.068,8.743-78.432,0c-16.677-5.75-32.329-15.27-45.641-28.582c-13.301-13.312-22.832-28.965-28.582-45.641l2.104-2.104c-2.104,2.104,37.087-37.849,37.087-37.849l37.137,37.849c20.458,20.469,53.755,20.469,74.224,0l2.104-2.104l96.786-96.786c20.458-20.458,20.458-53.755,0-74.224c-20.469-20.458-53.766-20.458-74.224,0l-96.786,96.786L218.89,195.62l-39.216-15.949c5.75-16.665,15.27-32.329,28.582-45.641l98.89-98.879C354.014-11.717,429.993-11.717,476.85,35.151z"/><path style="fill:#4AAEE2;" d="M258.106,179.671c16.665,5.75,32.318,15.281,45.63,28.593c13.312,13.301,22.843,28.965,28.593,45.63l-2.104,2.104c-20.469,20.469-53.766,20.469-74.224,0c-20.469-20.458-53.766-20.458-74.224,0l-2.104,2.104l-96.786,96.786c-20.469,20.469-20.469,53.766,0,74.224c20.458,20.469,53.755,20.469,74.224,0l96.786-96.786c25.364,8.743,53.068,8.743,78.432,0c-5.75,16.677-15.281,32.329-28.593,45.641l-98.879,98.89c-46.868,46.857-122.847,46.857-169.715,0c-46.857-46.868-46.857-122.847,0-169.715l98.89-98.879c13.312-13.312,28.965-22.843,45.641-28.593C205.038,170.929,232.742,170.929,258.106,179.671z"/></svg></a>
+                    </audio>
+                </div>
+            {{end}}
+        </div>
+
+        <script>
+            document.querySelectorAll(`.options .option`).forEach(elem => {
+                {{if eq .Winner 0}}
+                elem.onclick = e => {
+                    if (e.target.tagName == "DIV") {
+                        fetch('/choice', {
+                            method: 'POST',
+                            body: `{
+                                        "id": {{$obj.User_id}},
+                                        "voting_id": {{$obj.Vote_id}},
+                                        "choice": ${e.target.id}
+                                    }`
+                        }).then(x => x.text()).then(x => {
+                            if (x == "1") {
+                                alert("Успешно")
+                            } else {
+                                alert("Произошла ошибка")
+                            }
+                            location.reload();
+                        })
+                    }
+                }
+                {{end}}
+                elem.querySelector("svg").onclick = (e) => {
+                    let svg = elem.querySelector("svg")
+                    if (svg.classList[0] == "closed") {
+                        svg.classList.remove('closed');
+                        svg.classList.add('opened');
+                        elem.nextElementSibling.style.display = "flex";
+                    } else {
+                        svg.classList.remove('opened');
+                        svg.classList.add('closed');
+                        elem.nextElementSibling.style.display = "none";
+                    }
+                }
+            })
+
+            let sum = 0{{range $i, $val := .Votes}}+{{$val.Points}}{{end}};
+            {{range $i, $val := .Votes}}
+            document.querySelectorAll(".points")[{{$i}}].style.width = ({{$val.Points}}) / sum * 100+"%"
+            {{end}}
+        </script>
+
+        {{if eq .Show_count true}}
+        <div class="count">Всего проголосовало {{.Count}} человек</div>
+        {{end}}
+
+        <div class="bottom">
+            {{if ne .User_student true}}
+            <a href="/edit-songs">Изменить список песен</a>
+            {{end}}
+
+            {{if eq .Hist true}}
+            <a href="/">К текущему голосованию</a>
+            {{end}}
+
+            <a href="/history">История голосований</a>
+        </div>
+
+    </div>
+
+{{end}}

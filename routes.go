@@ -16,11 +16,11 @@ import (
 func index(c *gin.Context) {
 	Branch, Phone, isStudent, err := get_user_info()
 	if err != nil {
-		c.Data(200, "text/html; charset=utf-8", []byte("Пользователь не авторизирован"))
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("Пользователь не авторизирован"))
 	} else if Branch == "44b72cd889a44234a8a7a49750fedf1bc5a654d8b06257ec5866711be0be6286" || isStudent == false {
 		voting(c, Phone, isStudent)
 	} else {
-		c.Data(200, "text/html; charset=utf-8", []byte("Только для студентов АиВТ"))
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("Только для студентов АиВТ и преподавателей"))
 	}
 	fmt.Println(c.Request.Host + c.FullPath())
 }
@@ -68,6 +68,7 @@ func voting(c *gin.Context, user_id int, user_student bool) {
     SELECT votes.song_id, votes.votes, votes.points, songs.name, songs.url
     FROM votes, songs
     WHERE voting_id = $1 AND songs.song_id = votes.song_id
+	ORDER BY song_id
     `, vote.Voting_id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Query Error3: %v\n", err)
@@ -82,7 +83,7 @@ func voting(c *gin.Context, user_id int, user_student bool) {
 		var Votes votes_type
 		err = rows.Scan(&Votes.Song_id, &Votes.Votes, &Votes.Points, &Votes.Name, &Votes.Url)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Query Error5: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Query Error6: %v\n", err)
 		}
 		vote.Votes = append(vote.Votes, Votes)
 	}
@@ -101,9 +102,19 @@ Loop:
 		}
 	}
 
+	count := 0
+	err = connection.QueryRow(context.Background(), `
+	SELECT SUM(cardinality(votes))
+	FROM votes
+	WHERE voting_id = $1
+    `, vote.Voting_id).Scan(&count)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "QueryRow Error5: %v\n", err)
+	}
+
 	c.HTML(
 		http.StatusOK,
-		"index.html",
+		"voting.html",
 		struct {
 			Vote_id      int
 			Date         string
@@ -113,6 +124,8 @@ Loop:
 			User_choice  int
 			User_student bool
 			Hist         bool
+			Show_count   bool
+			Count        int
 		}{
 			vote.Voting_id,
 			vote.Date.Format("2006-01-02"),
@@ -122,6 +135,8 @@ Loop:
 			user_choice,
 			user_student,
 			hist,
+			show_count,
+			count,
 		},
 	)
 }
@@ -180,9 +195,9 @@ func choice(c *gin.Context) {
 		}
 	}
 	if err != nil {
-		c.Data(200, "text/html; charset=utf-8", []byte(`0`))
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`0`))
 	} else {
-		c.Data(200, "text/html; charset=utf-8", []byte(`1`))
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`1`))
 	}
 }
 
@@ -247,11 +262,11 @@ func history(c *gin.Context) {
 func get_songs(c *gin.Context) {
 	_, _, isStudent, _ := get_user_info()
 	if isStudent == true {
-		c.Data(200, "text/html; charset=utf-8", []byte("Только для преподавателей"))
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("Только для преподавателей"))
 	} else {
 		rows, err := connection.Query(context.Background(), `
-    	SELECT name,url,active FROM songs OFFSET 1
-    	`)
+		SELECT * FROM songs ORDER BY song_id OFFSET 1
+		`)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Query Error3: %v\n", err)
 		}
@@ -261,26 +276,16 @@ func get_songs(c *gin.Context) {
 			fmt.Fprintf(os.Stderr, "Query Error4: %v\n", err)
 		}
 
-		type song struct {
-			Name   string
-			Url    string
-			Active bool
-		}
-
-		var arr []song
+		var arr []song_type
 
 		for rows.Next() {
-			var s song
-			err = rows.Scan(&s.Name, &s.Url, &s.Active)
+			var s song_type
+			err = rows.Scan(&s.Song_id, &s.Name, &s.Url, &s.Active)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Query Error5: %v\n", err)
 			}
-			arr = append(arr, struct {
-				Name   string
-				Url    string
-				Active bool
-			}{
-				s.Name, s.Url, s.Active,
+			arr = append(arr, song_type{
+				s.Song_id, s.Name, s.Url, s.Active,
 			})
 		}
 
@@ -288,7 +293,7 @@ func get_songs(c *gin.Context) {
 			http.StatusOK,
 			"songs.html",
 			struct {
-				Songs []song
+				Songs []song_type
 			}{
 				arr,
 			},
@@ -299,32 +304,29 @@ func get_songs(c *gin.Context) {
 func edit_songs(c *gin.Context) {
 	_, _, isStudent, _ := get_user_info()
 	if isStudent == true {
-		c.Data(200, "text/html; charset=utf-8", []byte("Только для преподавателей"))
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("Только для преподавателей"))
 	} else {
 		body, _ := ioutil.ReadAll(c.Request.Body)
-		// fmt.Println(string(body))
-		var res [][]interface{}
+		var res song_type
 		err := json.Unmarshal(body, &res)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Query Error1: %v\n", err)
 		} else {
-			sql := "DELETE FROM songs WHERE song_id != 0;"
-			for _, v := range res {
-				sql = sql + fmt.Sprintf(`
-				INSERT INTO "songs" ("name","url","active")
-				VALUES ('%v','%v',%v);
-				`, v[0], v[1], v[2])
-			}
-			// fmt.Println(sql)
-			_, err = connection.Exec(context.Background(), sql, res)
+			_, err = connection.Exec(context.Background(), `
+			UPDATE songs
+			SET name = $1,
+			url = $2,
+			active = $3
+			WHERE song_id = $4
+			`, res.Name, res.Url, res.Active, res.Song_id)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Query Error2: %v\n", err)
 			}
 		}
 		if err != nil {
-			c.Data(200, "text/html; charset=utf-8", []byte(`0`))
+			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`0`))
 		} else {
-			c.Data(200, "text/html; charset=utf-8", []byte(`1`))
+			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`1`))
 		}
 	}
 }
